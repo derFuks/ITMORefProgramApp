@@ -1,0 +1,41 @@
+{
+  "listeners": [
+    {
+      "address": "0.0.0.0",
+      "port": 8080
+    }
+  ],
+
+  "db_clients": [
+  {
+    "name": "default",
+    "rdbms": "postgresql",
+
+    "host": "pg-itmo-cmrt-cmrt-itmo.i.aivencloud.com",
+    "port": 11753,
+    "dbname": "defaultdb",
+    "user": "avnadmin",
+    "passwd": "CHANGE_ME",
+
+    "sslmode": "require",
+
+    "number_of_connections": 5,
+    "timeout": 200
+  }
+],
+  
+  "app": {
+    "number_of_threads": 1,
+    "document_root": "./",
+    "upload_path": "uploads",
+    "load_dynamic_views": false,
+    "dynamic_views_path": [
+      "./views"
+    ]
+  },
+  "log": {
+    "log_path": "./logs",
+    "log_level": "DEBUG"
+  },
+  "plugins": []
+}

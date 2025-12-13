@@ -1,0 +1,22 @@
+# Local secrets
+config.local.json
+
+# Build artifacts
+build/
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+compile_commands.json
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+
+# Logs/uploads
+logs/
+uploads/
+
+# macOS
+.DS_Store
