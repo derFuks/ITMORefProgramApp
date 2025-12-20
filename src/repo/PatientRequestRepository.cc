@@ -116,8 +116,48 @@ OperationResult PatientRequestRepository::markPaid(long requestId, std::optional
     }
 }
 
+OperationResult PatientRequestRepository::markCancelled(long requestId) {
+    try {
+        auto trans = db_->newTransaction();
+
+        // Для простоты: лочу заявку FOR UPDATE и меняю статус из 'new' >> 'cancelled'
+        auto r = trans->execSqlSync(
+            R"SQL(
+                WITH req AS (
+                    SELECT id, status
+                    FROM patient_requests
+                    WHERE id = $1 AND is_deleted = FALSE
+                    FOR UPDATE
+                ),
+                upd AS (
+                    UPDATE patient_requests
+                    SET status = 'cancelled'
+                    WHERE id = (SELECT id FROM req)
+                      AND status = 'new'
+                    RETURNING 1
+                )
+                SELECT (SELECT COUNT(*) FROM upd) AS updated_requests
+            )SQL",
+            requestId
+        );
+
+        if (!r.empty()) {
+            const auto updated = r[0]["updated_requests"].as<long long>();
+            if (updated == 0) {
+                return OperationResult::Fail("Апдей не прошел (вероятно запрос уже проходил)");
+            }
+        }
+
+        return OperationResult::Success("Request cancelled");
+    } catch (const drogon::orm::DrogonDbException &e) {
+        return OperationResult::Fail(std::string("DB error: ") + e.base().what());
+    } catch (const std::exception &e) {
+        return OperationResult::Fail(std::string("Error: ") + e.what());
+    }
+}
+
 Json::Value PatientRequestRepository::list(const RequestFilter& filter) {
-    // Фиксированный запрос с опциональными фильтрами:
+    // Фиксированный запрос с опциональными фильтрами
     // если параметр NULL -> фильтр не применяется
     const std::string sql = R"SQL(
         SELECT

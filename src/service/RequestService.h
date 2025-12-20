@@ -23,6 +23,8 @@ public:
 
     OperationResult markPaid(long requestId, std::optional<double> priceOverride);
 
+    OperationResult markCancelled(long requestId);
+
     Json::Value list(const RequestFilter& filter);
 
 private:

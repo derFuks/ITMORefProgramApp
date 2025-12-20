@@ -2,6 +2,7 @@
 #include <drogon/drogon.h>
 #include <json/json.h>
 #include <sstream>
+#include <iomanip>
 
 #include "service/RequestService.h"
 #include "domain/RequestFilter.h"
@@ -34,7 +35,7 @@ void ManagerSsrController::requestsPage(const drogon::HttpRequestPtr& req,
 
     std::ostringstream html;
     html << "<!doctype html><html><head><meta charset='utf-8'>"
-         << "<title>Менеджер: список з</title>"
+         << "<title>Менеджер: список</title>"
          << "<style>"
          << "body{font-family:Arial, sans-serif; padding:20px;}"
          << "table{border-collapse:collapse; width:100%;}"
@@ -43,9 +44,15 @@ void ManagerSsrController::requestsPage(const drogon::HttpRequestPtr& req,
          << "form.inline{display:inline; margin:0;}"
          << "button{padding:6px 10px;}"
          << ".muted{color:#777;}"
+         << ".btn-danger{border:1px solid #d88; background:#fff; color:#a00;}"
+         << ".btn-danger:hover{background:#ffecec;}"
          << "</style></head><body>";
 
     html << "<h1>Валидация заявок и их оплата</h1>";
+        // Кнопка выхода (POST /manager/logout). В будущем можно добавить подтверждение.
+    html << "<form method='POST' action='/manager/logout' style='float:right; margin-top:-48px;'>"
+         << "<button type='submit'>Выйти</button>"
+         << "</form>";
     html << "<p class=''>На этой странице реализована ручная валидация заявок от пациентов. В следующих релизах планируется прямая интеграция с МИС.</p>";
 
     // Фильтр по статусу
@@ -62,7 +69,7 @@ void ManagerSsrController::requestsPage(const drogon::HttpRequestPtr& req,
          << "<button type='submit'>Применить</button>"
          << "</form>";
 
-    html << "<p class='muted'>Временный режим разработки: ключ API перекидываю через параметр <b>api_key</b> в URL. В следующих релизах переделаю через cookie.</p>";
+    html << "<p class='muted'>Авторизация менеджера сделана через cookie-сессию (MVP). Потом можно заменить вход на email/password + bcrypt.</p>";
 
     html << "<table><thead><tr>"
          << "<th>ID</th><th>Телефон</th><th>Услуга</th><th>Статус</th><th>Цена, руб.</th><th>Дата создания заявки</th><th>Дата оплаты партнеру</th><th>Действия</th>"
@@ -76,7 +83,16 @@ void ManagerSsrController::requestsPage(const drogon::HttpRequestPtr& req,
         const auto createdAt = it["created_at"].asString();
         const auto paidAt = it["paid_at"].isNull() ? "" : it["paid_at"].asString();
 
-        std::string priceStr = it["price"].isNull() ? "" : std::to_string(it["price"].asDouble());
+        // std::to_string печатает 6 знаков после запятой, до 2 знаков сокращаю.
+        std::string priceStr;
+        if (it["price"].isNull()) {
+            priceStr = "";
+        } else {
+            std::ostringstream ps;
+            ps.setf(std::ios::fixed);
+            ps << std::setprecision(2) << it["price"].asDouble();
+            priceStr = ps.str();
+        }
 
         html << "<tr>";
         html << "<td>" << id << "</td>";
@@ -92,6 +108,11 @@ void ManagerSsrController::requestsPage(const drogon::HttpRequestPtr& req,
                 html << "<form class='inline' method='POST' action='/manager/requests/" << id
                      << "/mark-paid" << "'>"
                      << "<button type='submit'>Отметить как оплачено</button>"
+                     << "</form>";
+                html << "<form class='inline' method='POST' action='/manager/requests/" << id
+                     << "/reject'"
+                     << ">"
+                     << "<button class='btn-danger' type='submit'>Отклонить оплату</button>"
                      << "</form>";
                      } else {
             html << "<span class='muted'>—</span>";
@@ -118,12 +139,22 @@ void ManagerSsrController::markPaidPost(const drogon::HttpRequestPtr& req,
     auto db = drogon::app().getDbClient("default");
     RequestService svc(db);
 
-    // SSR-форма без перерисовывания цены, берём base_price на момент заявки
+    // SSR-форма без перерисовывания цены, берем base_price на момент заявки
     (void)svc.markPaid(static_cast<long>(requestId), std::nullopt);
 
-    // Возвращаемся обратно сохраняя api_key. временный костыль)
-    const auto apiKey = getStrQ(req, "api_key");
-    auto url = std::string("/manager/requests");
-    auto resp = drogon::HttpResponse::newRedirectionResponse(url);
+    auto resp = drogon::HttpResponse::newRedirectionResponse("/manager/requests");
+    cb(resp);
+}
+
+void ManagerSsrController::rejectPaidPost(const drogon::HttpRequestPtr& req,
+                                         std::function<void(const drogon::HttpResponsePtr&)>&& cb,
+                                         long long requestId) {
+    auto db = drogon::app().getDbClient("default");
+    RequestService svc(db);
+
+    // Пока просто статус >> cancelled. Потом добавить причину отказа и в БД.
+    (void)svc.markCancelled(static_cast<long>(requestId));
+
+    auto resp = drogon::HttpResponse::newRedirectionResponse("/manager/requests");
     cb(resp);
 }

@@ -32,6 +32,9 @@ public:
     // priceOverride может быть NULL -> берём services.base_price
     OperationResult markPaid(long requestId, std::optional<double> priceOverride);
 
+    // отклонить оплату (перевести из new -> cancelled)
+    OperationResult markCancelled(long requestId);
+
 private:
     drogon::orm::DbClientPtr db_;
 };

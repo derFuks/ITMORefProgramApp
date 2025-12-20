@@ -20,6 +20,10 @@ OperationResult RequestService::markPaid(long requestId, std::optional<double> p
     return repo_.markPaid(requestId, priceOverride);
 }
 
+OperationResult RequestService::markCancelled(long requestId) {
+    return repo_.markCancelled(requestId);
+}
+
 Json::Value RequestService::list(const RequestFilter& filter) {
     return repo_.list(filter);
 }
