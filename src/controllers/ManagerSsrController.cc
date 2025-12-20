@@ -21,7 +21,6 @@ static std::string getStrQ(const drogon::HttpRequestPtr& req, const std::string&
 
 void ManagerSsrController::requestsPage(const drogon::HttpRequestPtr& req,
                                         std::function<void(const drogon::HttpResponsePtr&)>&& cb) {
-    const auto apiKey = getStrQ(req, "api_key"); // потом убрать, когда ключ через куки доставать буду
     RequestFilter filter;
     const auto status = getStrQ(req, "status");
     if (!status.empty()) filter.status = status;
@@ -51,7 +50,6 @@ void ManagerSsrController::requestsPage(const drogon::HttpRequestPtr& req,
 
     // Фильтр по статусу
     html << "<form method='GET' action='/manager/requests'>"
-         << "<input type='hidden' name='api_key' value='" << apiKey << "'/>"
          << "<label>Фильтр по статусу: </label>"
     
          << "<select name='status'>"
@@ -92,7 +90,7 @@ void ManagerSsrController::requestsPage(const drogon::HttpRequestPtr& req,
 
         if (st == "new") {
                 html << "<form class='inline' method='POST' action='/manager/requests/" << id
-                     << "/mark-paid?api_key=" << apiKey << "'>"
+                     << "/mark-paid" << "'>"
                      << "<button type='submit'>Отметить как оплачено</button>"
                      << "</form>";
                      } else {
@@ -125,7 +123,7 @@ void ManagerSsrController::markPaidPost(const drogon::HttpRequestPtr& req,
 
     // Возвращаемся обратно сохраняя api_key. временный костыль)
     const auto apiKey = getStrQ(req, "api_key");
-    auto url = std::string("/manager/requests?api_key=") + apiKey;
+    auto url = std::string("/manager/requests");
     auto resp = drogon::HttpResponse::newRedirectionResponse(url);
     cb(resp);
 }
