@@ -7,6 +7,7 @@ class PartnerService {
 public:
     explicit PartnerService(drogon::orm::DbClientPtr db);
 
+    Json::Value getMyProfile(long long userId);
     Json::Value getMyRequests(long long userId, int limit, int offset);
     Json::Value getMyRewards(long long userId, int limit, int offset);
 

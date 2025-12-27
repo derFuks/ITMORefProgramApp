@@ -9,6 +9,7 @@ public:
     explicit PartnerRepository(drogon::orm::DbClientPtr db);
 
     std::optional<long long> findPartnerIdByUserId(long long userId);
+    Json::Value getPartnerProfile(long long userId);
     Json::Value listPartnerRequests(long long partnerId, int limit, int offset);
     Json::Value listPartnerRewards(long long partnerId, int limit, int offset);
 

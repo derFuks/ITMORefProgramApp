@@ -18,6 +18,45 @@ std::optional<long long> PartnerRepository::findPartnerIdByUserId(long long user
     return r[0]["id"].as<long long>();
 }
 
+Json::Value PartnerRepository::getPartnerProfile(long long userId) {
+    // NOTE: тут специально всё «в лоб». Потом можно будет сделать нормальную модельку.
+    auto r = db_->execSqlSync(
+        R"SQL(
+            SELECT
+                p.id,
+                p.name,
+                p.email,
+                p.kev_id,
+                pn.phone AS phone
+            FROM partners p
+            LEFT JOIN partner_phone_numbers pn
+                ON pn.partner_id = p.id
+               AND pn.unassigned_at IS NULL
+               AND pn.is_active = TRUE
+            WHERE p.user_id = $1
+              AND p.is_deleted = FALSE
+            ORDER BY pn.assigned_at DESC NULLS LAST
+            LIMIT 1
+        )SQL",
+        userId
+    );
+
+    Json::Value out;
+    if (r.empty()) {
+        out["ok"] = false;
+        out["error"] = "Partner profile not found";
+        return out;
+    }
+
+    out["ok"] = true;
+    out["partner_id"] = Json::Int64(r[0]["id"].as<long long>());
+    out["name"] = r[0]["name"].as<std::string>();
+    out["email"] = r[0]["email"].as<std::string>();
+    out["kev_id"] = r[0]["kev_id"].isNull() ? "" : r[0]["kev_id"].as<std::string>();
+    out["phone"] = r[0]["phone"].isNull() ? "" : r[0]["phone"].as<std::string>();
+    return out;
+}
+
 Json::Value PartnerRepository::listPartnerRequests(long long partnerId, int limit, int offset) {
     auto r = db_->execSqlSync(
         R"SQL(

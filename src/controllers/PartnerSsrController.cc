@@ -66,6 +66,15 @@ void PartnerSsrController::requestsPage(const drogon::HttpRequestPtr& req,
     auto db = drogon::app().getDbClient("default");
     PartnerService svc(db);
 
+    // Профиль партнёра (kev_id + телефон). Если вдруг не нашли — просто показываем пусто.
+    // туду: вынести это в отдельную страницу "Инструменты".
+    Json::Value profile;
+    try {
+        profile = svc.getMyProfile(userId);
+    } catch (...) {
+        profile["ok"] = false;
+    }
+
     Json::Value items;
     try {
         items = svc.getMyRequests(userId, 50, 0);
@@ -86,10 +95,75 @@ void PartnerSsrController::requestsPage(const drogon::HttpRequestPtr& req,
          << "th,td{border-bottom:1px solid #eee;padding:10px;text-align:left;font-size:14px;}"
          << "th{color:#666;font-weight:600;}"
          << ".pill{display:inline-block;padding:4px 8px;border:1px solid #ddd;border-radius:999px;font-size:12px;color:#444;background:#fafafa;}"
+         << ".card{border:1px solid #eee;border-radius:12px;padding:14px;background:#fff;margin:12px 0;}"
+         << ".muted{color:#777;font-size:13px;}"
+         << ".btn{padding:8px 12px;border:1px solid #ddd;background:#fff;border-radius:8px;cursor:pointer;}"
+         << "input[type=text]{padding:8px 10px;border:1px solid #ddd;border-radius:8px;width:100%;max-width:520px;}"
          << "</style></head><body>";
 
     html << "<h1 style='margin:0 0 10px'>Кабинет партнера</h1>";
     renderTopNav(html, "requests");
+
+    // === Инструменты партнёра (ссылка + QR) ===
+    if (profile.get("ok", false).asBool()) {
+        const auto kevId = htmlEscape(profile.get("kev_id", "").asString());
+        const auto phone = htmlEscape(profile.get("phone", "").asString());
+
+        // NOTE: домен пока захардкожен, потом лучше вынести в config.
+        const std::string refLink = std::string("https://cmrt.ru/?kev_id=") + kevId;
+
+        // Для QR используем внешний генератор (быстро для MVP).
+        // туду: сделать генерацию QR на нашей стороне и отдавать svg/png без внешнего сервиса.
+        const std::string qrPngUrl = std::string("https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=") + drogon::utils::urlEncode(refLink);
+        const std::string qrSvgUrl = std::string("https://api.qrserver.com/v1/create-qr-code/?format=svg&size=220x220&data=") + drogon::utils::urlEncode(refLink);
+
+        html << "<div class='card'>";
+        html << "<div style='display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap'>";
+
+        html << "<div style='flex:1;min-width:320px'>";
+        html << "<h2 style='margin:0 0 8px'>Моя реферальная ссылка</h2>";
+        html << "<div class='muted' style='margin-bottom:10px'>"
+             << "kev_id: <b>" << kevId << "</b>";
+        if (!phone.empty()) {
+            html << "&nbsp;&nbsp;•&nbsp;&nbsp;Телефон: <b>" << phone << "</b>";
+        }
+        html << "</div>";
+
+        html << "<div style='display:flex;gap:10px;align-items:center;flex-wrap:wrap'>";
+        html << "<input id='refLink' type='text' readonly value='" << htmlEscape(refLink) << "'/>";
+        html << "<button class='btn' type='button' onclick='copyRefLink()'>Скопировать</button>";
+        html << "</div>";
+        html << "<div class='muted' style='margin-top:10px'>"
+             << "QR можно скачать как SVG или PNG и использовать в полиграфии/на сайте.";
+        html << "</div>";
+        html << "</div>"; // left
+
+        html << "<div style='min-width:240px'>";
+        html << "<img alt='QR' src='" << htmlEscape(qrPngUrl) << "' width='220' height='220' style='border:1px solid #eee;border-radius:12px'/>";
+        html << "<div style='display:flex;gap:10px;margin-top:10px'>";
+        html << "<a class='btn' href='" << htmlEscape(qrSvgUrl) << "' target='_blank' rel='noopener'>SVG</a>";
+        html << "<a class='btn' href='" << htmlEscape(qrPngUrl) << "' target='_blank' rel='noopener'>PNG</a>";
+        html << "</div>";
+        html << "</div>"; // right
+
+        html << "</div>";
+
+        html << "<script>\n"
+             << "function copyRefLink(){\n"
+             << "  var el=document.getElementById('refLink');\n"
+             << "  el.select();\n"
+             << "  el.setSelectionRange(0,99999);\n"
+             << "  if (navigator.clipboard && navigator.clipboard.writeText) {\n"
+             << "    navigator.clipboard.writeText(el.value).then(function(){alert('Ссылка скопирована');});\n"
+             << "  } else {\n"
+             << "    document.execCommand('copy');\n"
+             << "    alert('Ссылка скопирована');\n"
+             << "  }\n"
+             << "}\n"
+             << "</script>";
+
+        html << "</div>"; // card
+    }
 
     html << "<h2 style='margin:16px 0 10px'>Спосок заявок</h2>";
     html << "<table><thead><tr>"

@@ -23,6 +23,6 @@ void ManagerOnlyFilter::doFilter(const drogon::HttpRequestPtr& req,
         }
         fccb();
     } catch (...) {
-        fcb(jsonErr(drogon::k401Unauthorized, "Not authorized"));
+        fcb(jsonErr(drogon::k401Unauthorized, "Не авторизован"));
     }
 }
