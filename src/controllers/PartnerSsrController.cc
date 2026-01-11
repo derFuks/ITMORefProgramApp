@@ -105,7 +105,7 @@ void PartnerSsrController::requestsPage(const drogon::HttpRequestPtr& req,
 
         // Для QR используем внешний генератор (быстро для MVP).
         // туду: сделать генерацию QR на нашей стороне и отдавать svg/png без внешнего сервиса.
-        const std::string qrPngUrl = std::string("https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=") + drogon::utils::urlEncode(refLink);
+        const std::string qrPngUrl = std::string("https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=") + drogon::utils::urlEncode(refLink);
         const std::string qrSvgUrl = std::string("https://api.qrserver.com/v1/create-qr-code/?format=svg&size=220x220&data=") + drogon::utils::urlEncode(refLink);
 
         html << "<div class='card'>";
