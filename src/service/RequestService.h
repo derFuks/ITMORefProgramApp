@@ -7,6 +7,9 @@
 #include "domain/OperationResult.h"
 #include "repo/PatientRequestRepository.h"
 
+#include "repo/PartnerRepository.h"
+
+
 class RequestService {
 public:
     explicit RequestService(drogon::orm::DbClientPtr db);
@@ -17,8 +20,9 @@ public:
         std::optional<long> doctorId,
         const std::string& visitAtIso,
         std::optional<std::string> fullName,
-        std::optional<long> partnerId,
-        std::optional<std::string> partnerCode
+        std::optional<std::string> kevId,
+        std::optional<long> partnerIdLegacy,
+        std::optional<std::string> partnerCodeLegacy
     );
 
     OperationResult markPaid(long requestId, std::optional<double> priceOverride);
@@ -29,4 +33,5 @@ public:
 
 private:
     PatientRequestRepository repo_;
+    PartnerRepository partnerRepo_;
 };

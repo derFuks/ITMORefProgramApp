@@ -22,7 +22,8 @@ public:
         const std::string& visitAtIso,
         std::optional<std::string> fullName,
         std::optional<long> partnerId,
-        std::optional<std::string> partnerCode
+        std::optional<std::string> partnerCode,
+        std::optional<std::string> kevId
     );
 
     Json::Value list(const RequestFilter& filter);

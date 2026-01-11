@@ -6,6 +6,7 @@
 
 #include "service/RequestService.h"
 #include "domain/RequestFilter.h"
+#include "utils/LayoutHelper.h"
 
 static int getIntQ(const drogon::HttpRequestPtr& req, const std::string& k, int def) {
     auto qp = req->getParameters();
@@ -34,31 +35,15 @@ void ManagerSsrController::requestsPage(const drogon::HttpRequestPtr& req,
     auto items = svc.list(filter); // Json::arrayValue
 
     std::ostringstream html;
-    html << "<!doctype html><html><head><meta charset='utf-8'>"
-         << "<title>Менеджер: список</title>"
-         << "<style>"
-         << "body{font-family:Arial, sans-serif; padding:20px;}"
-         << "table{border-collapse:collapse; width:100%;}"
-         << "th,td{border:1px solid #ddd; padding:8px;}"
-         << "th{background:#f5f5f5; text-align:left;}"
-         << "form.inline{display:inline; margin:0;}"
-         << "button{padding:6px 10px;}"
-         << ".muted{color:#777;}"
-         << ".btn-danger{border:1px solid #d88; background:#fff; color:#a00;}"
-         << ".btn-danger:hover{background:#ffecec;}"
-         << "</style></head><body>";
+    html << layout::renderHeader("manager");
 
-    html << "<h1>Валидация заявок и их оплата</h1>";
-        // Кнопка выхода (POST /manager/logout). В будущем можно добавить подтверждение.
-    html << "<form method='POST' action='/manager/logout' style='float:right; margin-top:-48px;'>"
-         << "<button type='submit'>Выйти</button>"
-         << "</form>";
-    html << "<p class=''>На этой странице реализована ручная валидация заявок от пациентов. В следующих релизах планируется прямая интеграция с МИС.</p>";
+    html << "<div class='card'>";
+    html << "<h1 class='h1'>Валидация заявок и их оплата</h1>";
+    html << "<p class='p'>На этой странице реализована ручная валидация заявок от пациентов. В следующих релизах планируется прямая интеграция с МИС.</p>";
 
     // Фильтр по статусу
-    html << "<form method='GET' action='/manager/requests'>"
-         << "<label>Фильтр по статусу: </label>"
-    
+    html << "<form class='formRow' method='GET' action='/manager/requests'>"
+         << "<label class='labelInline'>Фильтр по статусу:</label>"
          << "<select name='status'>"
          << "<option value='' " << (status.empty() ? "selected" : "") << ">Все</option>"
          << "<option value='new' " << (status=="new" ? "selected" : "") << ">Новые</option>"
@@ -66,18 +51,19 @@ void ManagerSsrController::requestsPage(const drogon::HttpRequestPtr& req,
          << "<option value='cancelled' " << (status=="cancelled" ? "selected" : "") << ">Отклоненные</option>"
          << "</select> "
          << "<input type='hidden' name='limit' value='" << filter.limit << "'/>"
-         << "<button type='submit'>Применить</button>"
+         << "<button class='btn btn-outline' type='submit'>Применить</button>"
          << "</form>";
 
-    html << "<p class='muted'>Авторизация менеджера сделана через cookie-сессию (MVP). Потом можно заменить вход на email/password + bcrypt.</p>";
+    html << "<p class='p muted'>Авторизация менеджера сделана через cookie-сессию (MVP). Потом можно заменить вход на email/password + bcrypt.</p>";
 
     html << "<table><thead><tr>"
-         << "<th>ID</th><th>Телефон</th><th>Услуга</th><th>Статус</th><th>Цена, руб.</th><th>Дата создания заявки</th><th>Дата оплаты партнеру</th><th>Действия</th>"
+         << "<th>ID</th><th>Телефон</th><th>kev_id</th><th>Услуга</th><th>Статус</th><th>Цена, руб.</th><th>Дата создания заявки</th><th>Дата оплаты партнеру</th><th>Действия</th>"
          << "</tr></thead><tbody>";
 
     for (const auto& it : items) {
         const auto id = it["id"].asInt64();
         const auto phone = it["phone"].asString();
+        const auto kevId = it["kev_id"].isNull() ? "" : it["kev_id"].asString();
         const auto service = it["service"].asString();
         const auto st = it["status"].asString();
         const auto createdAt = it["created_at"].asString();
@@ -97,6 +83,11 @@ void ManagerSsrController::requestsPage(const drogon::HttpRequestPtr& req,
         html << "<tr>";
         html << "<td>" << id << "</td>";
         html << "<td>" << phone << "</td>";
+        if (kevId.empty()) {
+            html << "<td><span class='muted'>нет</span></td>";
+        } else {
+            html << "<td>" << kevId << "</td>";
+        }
         html << "<td>" << service << "</td>";
         html << "<td>" << st << "</td>";
         html << "<td>" << priceStr << "</td>";
@@ -123,6 +114,8 @@ void ManagerSsrController::requestsPage(const drogon::HttpRequestPtr& req,
     }
 
     html << "</tbody></table>";
+
+    html << layout::renderFooter();
     html << "</body></html>";
 
     auto resp = drogon::HttpResponse::newHttpResponse();

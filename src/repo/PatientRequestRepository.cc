@@ -12,15 +12,16 @@ CreateRequestResult PatientRequestRepository::createRequest(
     const std::string& visitAtIso,
     std::optional<std::string> fullName,
     std::optional<long> partnerId,
-    std::optional<std::string> partnerCode
+    std::optional<std::string> partnerCode,
+    std::optional<std::string> kevId
 ) {
     try {
         auto r = db_->execSqlSync(
             R"SQL(
                 INSERT INTO patient_requests
-                    (phone, service_id, doctor_id, visit_at, full_name, partner_id, partner_code)
+                    (phone, service_id, doctor_id, visit_at, full_name, partner_id, partner_code, kev_id)
                 VALUES
-                    ($1,    $2,         $3,        $4::timestamptz, $5,       $6,        $7)
+                    ($1,    $2,         $3,        $4::timestamptz, $5,       $6,        $7,         $8)
                 RETURNING id
             )SQL",
             phone,
@@ -29,7 +30,8 @@ CreateRequestResult PatientRequestRepository::createRequest(
             visitAtIso,
             fullName.has_value() ? std::optional<std::string>(*fullName) : std::nullopt,
             partnerId.has_value() ? std::optional<long>(*partnerId) : std::nullopt,
-            partnerCode.has_value() ? std::optional<std::string>(*partnerCode) : std::nullopt
+            partnerCode.has_value() ? std::optional<std::string>(*partnerCode) : std::nullopt,
+            kevId.has_value() ? std::optional<std::string>(*kevId) : std::nullopt
         );
 
         if (r.size() != 1) {
@@ -163,6 +165,8 @@ Json::Value PatientRequestRepository::list(const RequestFilter& filter) {
         SELECT
             pr.id,
             pr.phone,
+            pr.kev_id,
+            pr.partner_id,
             pr.status,
             pr.price,
             pr.created_at,
@@ -196,6 +200,13 @@ Json::Value PatientRequestRepository::list(const RequestFilter& filter) {
             Json::Value item;
             item["id"] = Json::Int64(row["id"].as<long long>());
             item["phone"] = row["phone"].as<std::string>();
+            item["kev_id"] = row["kev_id"].isNull()
+                ? Json::Value(Json::nullValue)
+                : Json::Value(row["kev_id"].as<std::string>());
+
+            item["partner_id"] = row["partner_id"].isNull()
+                ? Json::Value(Json::nullValue)
+                : Json::Value(Json::Int64(row["partner_id"].as<long long>()));
             item["status"] = row["status"].as<std::string>();
             item["service"] = row["service_name"].as<std::string>();
 

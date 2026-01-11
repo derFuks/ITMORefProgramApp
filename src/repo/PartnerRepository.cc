@@ -18,6 +18,24 @@ std::optional<long long> PartnerRepository::findPartnerIdByUserId(long long user
     return r[0]["id"].as<long long>();
 }
 
+std::optional<long long> PartnerRepository::findPartnerIdByKevId(const std::string &kevId) {
+    if (kevId.empty()) return std::nullopt;
+
+    auto r = db_->execSqlSync(
+        R"SQL(
+            SELECT id
+            FROM partners
+            WHERE kev_id = $1 AND is_deleted = FALSE
+            LIMIT 1
+        )SQL",
+        kevId
+    );
+
+    if (r.empty()) return std::nullopt;
+    return r[0]["id"].as<long long>();
+}
+
+
 Json::Value PartnerRepository::getPartnerProfile(long long userId) {
     // NOTE: тут специально всё «в лоб». Потом можно будет сделать нормальную модельку.
     auto r = db_->execSqlSync(

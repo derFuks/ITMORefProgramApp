@@ -5,6 +5,8 @@
 #include <random>
 #include <sstream>
 
+#include "utils/LayoutHelper.h"
+
 
 // cкопировал с менеджерского входа
 static std::string genSessionId() {
@@ -39,27 +41,27 @@ void PartnerAuthController::loginPage(const drogon::HttpRequestPtr& req,
     const auto err = req->getParameter("err");
 
     std::ostringstream html;
-    html << "<!doctype html><html><head><meta charset='utf-8'>"
-         << "<title>Кабинет партнёра</title>"
-         << "<style>"
-         << "body{font-family:Arial,sans-serif;padding:24px;max-width:520px;margin:0 auto;}"
-         << "input{width:100%;padding:10px;margin:8px 0;}"
-         << "button{padding:10px 14px;}"
-         << ".err{color:#b00020;margin:10px 0;}"
-         << "</style></head><body>";
+    html << layout::renderHeader(std::nullopt);
+    html << "<div class='card' style='max-width:640px;margin:0 auto'>";
+    html << "<h1 class='h1'>Вход для партнёров</h1>";
+    if (!err.empty()) html << "<div class='alert alert-err'>" << htmlEscape(err) << "</div>";
 
-    html << "<h1>Вход для партнёров</h1>";
-    if (!err.empty()) html << "<div class='err'>" << htmlEscape(err) << "</div>";
-
-    html << "<form method='POST' action='/partner/login'>"
+    html << "<form class='form' method='POST' action='/partner/login'>"
+         << "<div class='field'>"
          << "<label>Ключ доступа (API key)</label>"
          << "<input name='api_key' type='password' placeholder='Введите ключ'/>"
-         << "<button type='submit'>Войти</button>"
+         << "<div class='hint'>Это временно. В следующей итерации заменю на логин/пароль.</div>"
+         << "</div>"
+         << "<div class='ctaRow'>"
+         << "<button class='btn' type='submit'>Войти</button>"
+         << "<a class='btn btn-outline' href='/'>На главную</a>"
+         << "</div>"
          << "</form>";
 
     html << "<p style='color:#777'>!Это MVP: вход по API key. Потом сделаем логин/пароль и восстановление.</p>";
 
-    html << "</body></html>";
+    html << "</div>";
+    html << layout::renderFooter();
 
     auto resp = drogon::HttpResponse::newHttpResponse();
     resp->setContentTypeCode(drogon::CT_TEXT_HTML);

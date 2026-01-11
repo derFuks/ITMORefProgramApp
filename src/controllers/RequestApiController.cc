@@ -39,6 +39,11 @@ void RequestApiController::create(const drogon::HttpRequestPtr& req,
     if ((*json).isMember("full_name") && !(*json)["full_name"].isNull())
         fullName = (*json)["full_name"].asString();
 
+    // Новый параметр: kev_id (реферальный код партнёра). Если он есть — он важнее partner_id/partner_code.
+    std::optional<std::string> kevId;
+    if ((*json).isMember("kev_id") && !(*json)["kev_id"].isNull())
+        kevId = (*json)["kev_id"].asString();
+
     std::optional<long> partnerId;
     if ((*json).isMember("partner_id") && !(*json)["partner_id"].isNull())
         partnerId = (*json)["partner_id"].asInt64();
@@ -56,7 +61,7 @@ void RequestApiController::create(const drogon::HttpRequestPtr& req,
     }
 
     RequestService svc(db);
-    auto res = svc.createRequest(phone, serviceId, doctorId, visitAt, fullName, partnerId, partnerCode);
+    auto res = svc.createRequest(phone, serviceId, doctorId, visitAt, fullName, kevId, partnerId, partnerCode);
 
     Json::Value out;
     out["ok"] = res.ok;

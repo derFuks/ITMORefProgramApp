@@ -6,6 +6,7 @@
 #include <sstream>
 
 #include "service/PartnerService.h"
+#include "utils/LayoutHelper.h"
 
 static std::string fmtMoney(const Json::Value& v) {
     if (v.isNull()) return "";
@@ -87,22 +88,12 @@ void PartnerSsrController::requestsPage(const drogon::HttpRequestPtr& req,
     }
 
     std::ostringstream html;
-    html << "<!doctype html><html><head><meta charset='utf-8'>"
-         << "<title>Кабинет партнера ЦМРТ - заявки</title>"
-         << "<style>"
-         << "body{font-family:Arial,sans-serif;padding:24px;max-width:1100px;margin:0 auto;}"
-         << "table{border-collapse:collapse;width:100%;}"
-         << "th,td{border-bottom:1px solid #eee;padding:10px;text-align:left;font-size:14px;}"
-         << "th{color:#666;font-weight:600;}"
-         << ".pill{display:inline-block;padding:4px 8px;border:1px solid #ddd;border-radius:999px;font-size:12px;color:#444;background:#fafafa;}"
-         << ".card{border:1px solid #eee;border-radius:12px;padding:14px;background:#fff;margin:12px 0;}"
-         << ".muted{color:#777;font-size:13px;}"
-         << ".btn{padding:8px 12px;border:1px solid #ddd;background:#fff;border-radius:8px;cursor:pointer;}"
-         << "input[type=text]{padding:8px 10px;border:1px solid #ddd;border-radius:8px;width:100%;max-width:520px;}"
-         << "</style></head><body>";
-
-    html << "<h1 style='margin:0 0 10px'>Кабинет партнера</h1>";
+    html << layout::renderHeader("partner");
+    html << "<div class='card'>";
+    html << "<h1 class='h1'>Кабинет партнера</h1>";
     renderTopNav(html, "requests");
+    html << "</div>";
+
 
     // === Инструменты партнёра (ссылка + QR) ===
     if (profile.get("ok", false).asBool()) {
@@ -164,8 +155,9 @@ void PartnerSsrController::requestsPage(const drogon::HttpRequestPtr& req,
 
         html << "</div>"; // card
     }
-
-    html << "<h2 style='margin:16px 0 10px'>Спосок заявок</h2>";
+    
+    html << "<div class='card'>";
+    html << "<h2 class='h2'>Список заявок</h2>";
     html << "<table><thead><tr>"
          << "<th>ID</th><th>Телефон</th><th>Услуга</th><th>Статус</th><th>Цена</th><th>Создано</th><th>Оплачено</th>"
          << "</tr></thead><tbody>";
@@ -191,9 +183,10 @@ void PartnerSsrController::requestsPage(const drogon::HttpRequestPtr& req,
     }
 
     html << "</tbody></table>";
-    html << "<p style='color:#777;margin-top:14px'>Пагинацию и фильтры добавлю в следующих итерациях.</p>";
+    html << "<p class='p muted' style='margin-top:14px'>Пагинацию и фильтры добавлю в следующих итерациях.</p>";
+    html << "</div>";
 
-    html << "</body></html>";
+    html << layout::renderFooter();
 
     auto resp = drogon::HttpResponse::newHttpResponse();
     resp->setContentTypeCode(drogon::CT_TEXT_HTML);
@@ -225,19 +218,14 @@ void PartnerSsrController::rewardsPage(const drogon::HttpRequestPtr& req,
     }
 
     std::ostringstream html;
-    html << "<!doctype html><html><head><meta charset='utf-8'>"
-         << "<title>Кабинет партнера — начисления</title>"
-         << "<style>"
-         << "body{font-family:Arial,sans-serif;padding:24px;max-width:1100px;margin:0 auto;}"
-         << "table{border-collapse:collapse;width:100%;}"
-         << "th,td{border-bottom:1px solid #eee;padding:10px;text-align:left;font-size:14px;}"
-         << "th{color:#666;font-weight:600;}"
-         << "</style></head><body>";
-
-    html << "<h1 style='margin:0 0 10px'>Кабинет партнёра</h1>";
+    html << layout::renderHeader("partner");
+    html << "<div class='card'>";
+    html << "<h1 class='h1'>Кабинет партнёра</h1>";
     renderTopNav(html, "rewards");
+    html << "</div>";
 
-    html << "<h2 style='margin:16px 0 10px'>Мои начисления</h2>";
+    html << "<div class='card'>";
+    html << "<h2 class='h2'>Мои начисления</h2>";
     html << "<table><thead><tr>"
          << "<th>ID</th><th>ID заявки</th><th>Ставка</th><th>Сумма</th><th>Создано</th>"
          << "</tr></thead><tbody>";
@@ -259,8 +247,9 @@ void PartnerSsrController::rewardsPage(const drogon::HttpRequestPtr& req,
     }
 
     html << "</tbody></table>";
-    html << "<p style='color:#777;margin-top:14px'>Тут тоже можно будет добавить сумму итого и экспорт в CSV, но позже.</p>";
-    html << "</body></html>";
+    html << "<p class='p muted' style='margin-top:14px'>Тут тоже можно будет добавить сумму итого и экспорт в CSV, но позже.</p>";
+    html << "</div>";
+    html << layout::renderFooter();
 
     auto resp = drogon::HttpResponse::newHttpResponse();
     resp->setContentTypeCode(drogon::CT_TEXT_HTML);
